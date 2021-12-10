@@ -158,6 +158,8 @@ def recv_forward(tensor_shape=None, dtype_=None, timers=None):
     else:
         if timers is not None:
             timers('forward-recv').start()
+        rank = torch.distributed.get_rank() 
+        print(f"now calling forward-recv at rank: {rank} ")
         input_tensor, _ = _communicate(
             tensor_send_next=None,
             tensor_send_prev=None,
@@ -165,6 +167,7 @@ def recv_forward(tensor_shape=None, dtype_=None, timers=None):
             recv_next=False,
             tensor_shape=tensor_shape,
             dtype_=dtype_)
+        print(f"forward-recv done at rank: {rank}")
         if timers is not None:
             timers('forward-recv').stop()
     return input_tensor
@@ -208,8 +211,10 @@ def send_forward(output_tensor, tensor_shape=None, dtype_=None, timers=None):
 def send_backward(input_tensor_grad, tensor_shape=None, timers=None):
     """Send tensor to previous rank in pipeline (backward send)."""
     if not mpu.is_pipeline_first_stage():
+        rank = torch.distributed.get_rank() 
         if timers is not None:
             timers('backward-send').start()
+            print(f"now calling forward-recv at rank: {rank} ")
         _communicate(
             tensor_send_next=None,
             tensor_send_prev=input_tensor_grad,
@@ -218,6 +223,7 @@ def send_backward(input_tensor_grad, tensor_shape=None, timers=None):
             tensor_shape=tensor_shape)
         if timers is not None:
             timers('backward-send').stop()
+            print(f"now  end forward-recv at rank: {rank} ")
 
 
 def send_forward_recv_backward(output_tensor, tensor_shape=None, timers=None):

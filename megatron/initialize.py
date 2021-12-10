@@ -68,6 +68,7 @@ def initialize_megatron(extra_args_provider=None, args_defaults={},
     _set_jit_fusion_options()
 
     args = get_args()
+    print(f"lazy_mpu_init: {args.lazy_mpu_init}")
     if  args.lazy_mpu_init:
         args.use_cpu_initialization=True
         # delayed initialization of DDP-related stuff
@@ -156,6 +157,7 @@ def _initialize_distributed():
 
     device_count = torch.cuda.device_count()
     if torch.distributed.is_initialized():
+        print("distributed already initialized")
 
         if args.rank == 0:
             print('torch distributed is already initialized, '
@@ -164,6 +166,7 @@ def _initialize_distributed():
         args.world_size = torch.distributed.get_world_size()
 
     else:
+        print("dirstributed noe initialized")
 
         if args.rank == 0:
             print('> initializing torch distributed ...', flush=True)
@@ -177,6 +180,7 @@ def _initialize_distributed():
                 args.local_rank = device
             torch.cuda.set_device(device)
     # Call the init process
+    print(f"init_process_group params is: rank: {args.rank}, world_size: {args.world_size}")
     torch.distributed.init_process_group(
         backend=args.distributed_backend,
         world_size=args.world_size, rank=args.rank,
@@ -188,6 +192,7 @@ def _initialize_distributed():
         if mpu.model_parallel_is_initialized():
             print('model parallel is already initialized')
         else:
+            print(f"init model parallel hypers: pipe_para: {args.virtual_pipeline_model_parallel_size}, pipe_split_rank {args.pipeline_model_parallel_split_rank}")
             mpu.initialize_model_parallel(args.tensor_model_parallel_size,
                                           args.pipeline_model_parallel_size,
                                           args.virtual_pipeline_model_parallel_size,

@@ -189,11 +189,16 @@ class DistributedDataParallel(DistributedDataParallelBase):
         """Reduce gradients across data parallel ranks."""
         # If we have buffers, simply reduce the data in the buffer.
         if self._grad_buffers is not None:
+            print("grad allreduce : _grad_buffers")
             for _, buffer_ in self._grad_buffers.items():
                 buffer_.data /= mpu.get_data_parallel_world_size()
+                print(f"buff grad info: {buffer_.data.shape}, type: {buffer_.data.dtype}")
+                print(f"grad group is: {mpu.get_data_parallel_group()}")
                 torch.distributed.all_reduce(
                     buffer_.data, group=mpu.get_data_parallel_group())
         else:
+
+            print("grad allreduce : _grad_buckets")
             # Otherwise, bucketize and all-reduce
             buckets = {}
             # Pack the buckets.
@@ -211,6 +216,7 @@ class DistributedDataParallel(DistributedDataParallelBase):
                 grads = [param.grad.data for param in bucket]
                 coalesced = _flatten_dense_tensors(grads)
                 coalesced /= mpu.get_data_parallel_world_size()
+                print(f"bucket grad info: {coalesced.data.shape}, type: {coalesced.data.dtype}")
                 torch.distributed.all_reduce(
                     coalesced, group=mpu.get_data_parallel_group())
                 for buf, synced in zip(grads, _unflatten_dense_tensors(

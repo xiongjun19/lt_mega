@@ -51,6 +51,7 @@ from megatron.utils import calc_params_l2_norm
 from megatron.schedules import get_forward_backward_func
 from megatron.utils import report_memory
 # import ctypes
+# import nvidia_dlprof_pytorch_nvtx
 
 
 
@@ -107,6 +108,7 @@ def pretrain(train_valid_test_dataset_provider,
             to set already parse arguments.
     """
     
+    # nvidia_dlprof_pytorch_nvtx.init()
 
     # Initalize and get arguments, timers, and Tensorboard writer.
     initialize_megatron(extra_args_provider=extra_args_provider,
@@ -680,18 +682,10 @@ def train(forward_step_func, model, optimizer, lr_scheduler,
     timers('interval-time').start()
     print_datetime('before the start of training step')
     report_memory_flag = True
-    dst_it = iteration + 30 
+    dst_it = iteration + 20 
     #while iteration < args.train_iters:
     # p_start()
-    with torch.profiler.profile(
-        # activities=[torch.profiler.ProfilerActivity.CUDA],
-        schedule=torch.profiler.schedule(wait=3, warmup=3, active=4, repeat=2),
-        on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/bert35_4t4_p2'),
-        with_stack=True,
-        # profile_memory=True,
-        with_flops=True,
-        record_shapes=True
-        ) as prof: 
+    with torch.autograd.profiler.emit_nvtx():
         while iteration < dst_it: 
             update_num_microbatches(args.consumed_train_samples)
             loss_dict, skipped_iter, grad_norm, num_zeros_in_grad = \
@@ -715,7 +709,6 @@ def train(forward_step_func, model, optimizer, lr_scheduler,
                                               iteration, loss_scale,
                                               report_memory_flag, skipped_iter,
                                               grad_norm, params_norm, num_zeros_in_grad)
-            prof.step()
 
             # # Autoresume
             # if args.adlr_autoresume and \

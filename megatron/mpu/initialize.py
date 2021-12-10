@@ -128,6 +128,7 @@ def initialize_model_parallel(tensor_model_parallel_size_=1,
         for j in range(tensor_model_parallel_size):
             ranks = range(start_rank + j, end_rank,
                           tensor_model_parallel_size)
+            print(f"data parallel ranks is {list(ranks)}")
             all_data_parallel_group_ranks.append(list(ranks))
             group = torch.distributed.new_group(ranks)
             if rank in ranks:
@@ -183,6 +184,7 @@ def initialize_model_parallel(tensor_model_parallel_size_=1,
                                    ranks[-1]]
         else:
             embedding_ranks = ranks
+        print(f"embedding_ranks is: {list(ranks)}")
         group = torch.distributed.new_group(embedding_ranks)
         if rank in embedding_ranks:
             _EMBEDDING_GROUP = group
