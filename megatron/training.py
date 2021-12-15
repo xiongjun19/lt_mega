@@ -690,7 +690,7 @@ def train(forward_step_func, model, optimizer, lr_scheduler,
     with torch.profiler.profile(
         # activities=[torch.profiler.ProfilerActivity.CUDA],
         schedule=torch.profiler.schedule(wait=3, warmup=3, active=4, repeat=1),
-        on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/bert35_4t4'),
+        on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/bert35_4t4_p2'),
         with_stack=True,
         # profile_memory=True,
         with_flops=True,

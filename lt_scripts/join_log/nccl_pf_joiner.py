@@ -6,12 +6,17 @@ this file is designed to join pytorch profile's log with nccl's log
 
 import json
 import argparse
+import os
 from collections import OrderedDict
 from dataclasses import dataclass
 import nccl_log_miner as ncl_miner
 
 
-def _load_py_prof(f_path):
+def _load_py_prof(f_dir):
+    f_list = os.listdir(f_dir)
+    f_list = [os.path.join(f_dir, x) for x in f_list if x.endswith(".json")]
+    f_list.sort(key=lambda x: os.path.getmtime(x))
+    f_path =  f_list[-1]
     res = []
     with open(f_path) as r:
         obj = json.load(r)
@@ -25,6 +30,7 @@ def _load_py_prof(f_path):
                         res.append(evt_obj)
     return res
 
+
 def _join_coarsely(nccl_event_arr, ncl_obj_arr, ncl_obj_cnt):
     res = []
     for event in nccl_event_arr:
@@ -33,12 +39,14 @@ def _join_coarsely(nccl_event_arr, ncl_obj_arr, ncl_obj_cnt):
         res.append([event, ncl_obj_sub_arr])
     return res
 
+
 def _filter_sub_arr(event, ncl_obj_arr):
     res = []
     for obj in ncl_obj_arr:
         if _is_match(obj, event):
             res.append(obj)
     return res
+
 
 def _is_match(obj, event):
     name = event['name'].lower()
@@ -145,12 +153,13 @@ def main(args):
 
     # step3 filter joined_res by stream map
     filter_joined_res = _filter_with_stream(coarse_joined_res, stream_map)
-    for evt, sub_arr in filter_joined_res:
-        print("*" * 66)
-        print(evt)
-        print(sub_arr)
-
-
+    # save to output
+    with open(args.output, "w") as out_:
+        for evt, sub_arr in filter_joined_res:
+            extra_str = [str(x) for x in sub_arr]
+            evt['extra_nccl'] = extra_str 
+            out_str = json.dumps(evt)
+            out_.write(out_str + "\n")
 
 
 if __name__ == '__main__':
@@ -158,6 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--f_py_prof', type=str, help="file path to the pytorch profiler")
     parser.add_argument('-n', '--nccl', type=str, help='file path to log with nccl\'s log')
     parser.add_argument('--iters', type=int, help='minimum iterations log required from nccl')
+    parser.add_argument('-o', '--output', type=str, help='path to output path about the joined files')
     args = parser.parse_args()
     main(args)
 

@@ -116,6 +116,10 @@ def parse_and_mine(args):
 
 def test(args):
     ncl_obj_arr, ncl_obj_cnt = parse_and_mine(args)
+    print("obj_arr is folllowing: ")
+    for x in ncl_obj_arr:
+        if x.device ==1 and str(x) in ncl_obj_cnt:
+            print(x)
     print(f"number of nccl_objs is {len(ncl_obj_arr)}")
     for key, val in ncl_obj_cnt.items():
         print(key)
